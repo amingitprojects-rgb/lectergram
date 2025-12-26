@@ -38,7 +38,7 @@ function SigninForm() {
       const isLoggedIn = await checkAuthUser();
       if (isLoggedIn) {
         form.reset();
-        navigate("/"); // هدایت به صفحه اصلی
+        navigate("/");  
       } else {
         toast.error("Login failed. Please try again.");
       }
@@ -51,7 +51,7 @@ function SigninForm() {
   return (
     <Form {...form}>
       <div className="sm:w-42 flex items-center flex-col">
-        <img src="/assets/images/logo.svg" alt="logo" />
+        <h1 className="font-bold text-2xl">Lectergram</h1>
 
         <h2 className="h3-bold md:h2-bold pt-5 sm:pt-12">
           Log in to your account
