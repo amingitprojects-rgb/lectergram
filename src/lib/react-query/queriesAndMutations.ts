@@ -1,4 +1,9 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   createPost,
   createUserAccount,
@@ -14,7 +19,7 @@ import {
   signOutAccount,
   updatePost,
 } from "../appwrite/api";
-import type { INewPost, INewUser, IUpdatePost } from "../../types";
+import type { IInfinitePostsResponse, INewPost, INewUser, IRawInfinitePostsResponse, IUpdatePost } from "../../types";
 import type { IPostDoc } from "../../types";
 import { QUERY_KEYS } from "./queryKeys";
 import { appwriteConfig, databases } from "../appwrite/config";
@@ -56,7 +61,7 @@ export const useCreatePost = () => {
 
   return useMutation({
     mutationFn: async (
-      post: INewPost & { userId: string; name: string; userImageUrl: string }
+      post: INewPost & { userId: string; name: string; userImageUrl: string },
     ) => {
       const newPost = await createPost(post);
       if (!newPost) throw new Error("Failed to create post");
@@ -161,7 +166,7 @@ export const useGetPostById = (postId: string) => {
           const userDoc = await databases.getDocument(
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
-            post.creator
+            post.creator,
           );
           creator.name = userDoc.name ?? "Unknown";
           creator.imageUrl =
@@ -200,24 +205,42 @@ export const useUpdatePost = () => {
 };
 
 export const useGetPosts = () => {
-  return useInfiniteQuery({
+  return useInfiniteQuery<
+    IInfinitePostsResponse,                       // داده هر صفحه
+    Error,                                        // ارور
+    IInfinitePostsResponse,                       // داده برگشتی کل
+    [typeof QUERY_KEYS.GET_INFINITE_POSTS]        // queryKey
+    // ✅ حذف pageParam از اینجا
+  >({
     queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
-    queryFn: getInfinitePosts,
-    getNextPageParam: (lastpage) => {
-      if(lastpage && lastpage.documents.length === 0) return null;
 
-      const lastId = lastpage?.documents[lastpage.documents.length - 1].$id;
+    queryFn: async (context) => {
+      const pageParam = context.pageParam ?? ""; // TS حالا بدون ارور تشخیص می‌دهد
 
-      return lastId;
+      const result: IRawInfinitePostsResponse = await getInfinitePosts(pageParam);
+
+      return {
+        documents: result.documents ?? [],
+        total: result.total ?? 0,
+      };
     },
-    initialPageParam: null,
-  })
-}
+
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || lastPage.documents.length === 0) return undefined;
+      return lastPage.documents[lastPage.documents.length - 1].$id;
+    },
+
+    initialPageParam: "", // رشته خالی
+  });
+};
+
+
+
 
 export const useSearchPosts = (searchTerm: string) => {
   return useQuery({
     queryKey: [QUERY_KEYS.SEARCH_POSTS, searchTerm],
     queryFn: () => searchPosts(searchTerm),
     enabled: !!searchTerm,
-  })
-}
+  });
+};

@@ -73,3 +73,13 @@ export interface ISaveRecord extends Models.Document {
   post: { $id: string } & Partial<IPostDoc>;
   user?: { $id: string; name?: string; imageUrl?: string };
 }
+
+export interface IInfinitePostsResponse {
+  documents: IPostDoc[];
+  total: number;
+}
+
+export interface IRawInfinitePostsResponse {
+  documents?: IPostDoc[];
+  total?: number;
+}
